@@ -21,4 +21,10 @@ Water Simulation -> Internal Clock -> ML-Powered Adjustments -> Corrected Water 
 Frontend:
 
 Backend:
-- Python
+- **Python 3.11**: Base language for backend development
+- **NumPy**: Arithmetic handling (ie. square root, random noise, floating-point arrays)
+- **FastAPI**: Web framework to expose simulator state to frontend via JSON
+- **Uvicorn**: Lightweight server that runs FastAPI and listens for HTTP requests
+- **SQLAlchemy**: ORM (Object-Relational Mapper) that reads/writes  PostgreSQL database using Python objects instead of raw SQL
+- **PostgreSQL**: Relational database where every simulation tick and every ML prediction is permanently stored
+- **scikit-learn**: ML library that corrects the simulator drift against real wall-clock reference time
