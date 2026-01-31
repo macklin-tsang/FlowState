@@ -33,6 +33,7 @@ def save_tick(state: Dict[str, float]) -> int:
             erosion=state["erosion"],
             sediment=state["sediment"],
             raw_time=state["raw_time"],
+            elapsed_time=state.get("elapsed_time", 0),
         )
 
         session.add(row)
@@ -101,10 +102,34 @@ def get_latest_state() -> Optional[Dict[str, Any]]:
             "erosion": row.erosion,
             "sediment": row.sediment,
             "raw_time": row.raw_time,
+            "elapsed_time": row.elapsed_time,
         }
 
     finally:
         session.close()
+
+
+def get_all_states():
+    """Return all sim_state rows as a list of dicts (for ML training)."""
+    session = get_session()
+    try:
+        rows = session.query(SimState).order_by(SimState.tick_id).all()
+        return [
+            {
+                "tick_id": r.tick_id,
+                "water_height": r.water_height,
+                "flow_rate": r.flow_rate,
+                "turbulence": r.turbulence,
+                "erosion": r.erosion,
+                "sediment": r.sediment,
+                "raw_time": r.raw_time,
+                "elapsed_time": r.elapsed_time,
+            }
+            for r in rows
+        ]
+    finally:
+        session.close()
+
 
 def get_latest_ml() -> Optional[Dict[str, Any]]:
     """

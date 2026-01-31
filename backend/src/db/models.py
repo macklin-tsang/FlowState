@@ -23,6 +23,7 @@ class SimState(Base):
     erosion = Column(Float, nullable=False)
     sediment = Column(Float, nullable=False)
     raw_time = Column(Float, nullable=False)
+    elapsed_time = Column(Float, nullable=False, default=0)
 
 
 class MLHistory(Base):
