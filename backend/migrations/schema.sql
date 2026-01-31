@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS sim_state (
     turbulence   DOUBLE PRECISION NOT NULL,
     erosion      DOUBLE PRECISION NOT NULL,
     sediment     DOUBLE PRECISION NOT NULL,
-    raw_time     DOUBLE PRECISION NOT NULL
+    raw_time     DOUBLE PRECISION NOT NULL,
+    elapsed_time DOUBLE PRECISION NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS ml_history (
