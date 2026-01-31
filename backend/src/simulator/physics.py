@@ -131,6 +131,7 @@ class WaterClockSimulator:
             "erosion": round(self.cumulative_erosion, 12),
             "sediment": round(self.cumulative_sediment, 12),
             "raw_time": round(self.h_basin * TIME_PER_UNIT_HEIGHT, 4),
+            "elapsed_time": round(self.elapsed, 4),
         }
 
     @property
