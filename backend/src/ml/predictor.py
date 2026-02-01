@@ -16,7 +16,7 @@ import numpy as np
 import joblib
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.joblib")
-FEATURE_COLS = ["raw_time", "water_height", "flow_rate", "turbulence", "erosion", "sediment"]
+FEATURE_COLS = ["raw_time", "water_height", "flow_rate", "turbulence", "erosion", "sediment", "temperature"]
 
 # Module-level model reference — loaded once on import.
 _model = None
