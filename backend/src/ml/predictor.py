@@ -12,7 +12,6 @@ or restart the API server.
 import os
 import time
 from typing import Dict, Any
-
 import numpy as np
 import joblib
 
