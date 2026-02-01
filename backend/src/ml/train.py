@@ -26,7 +26,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import joblib
 
 # Features the model uses to predict elapsed_time.
-FEATURE_COLS = ["raw_time", "water_height", "flow_rate", "turbulence", "erosion", "sediment"]
+FEATURE_COLS = ["raw_time", "water_height", "flow_rate", "turbulence", "erosion", "sediment", "temperature"]
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.joblib")
 
 
