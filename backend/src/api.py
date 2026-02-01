@@ -165,6 +165,15 @@ def train(n_ticks: int = Query(default=500, ge=10, le=10000)):
     return {"status": "trained", "n_ticks": n_ticks}
 
 
+@app.post("/reset")
+def reset_sim():
+    """Reset the simulator to initial conditions so the demo can be re-run."""
+    global _ticks_since_retrain
+    sim.reset()
+    _ticks_since_retrain = 0
+    return {"status": "reset", "state": sim.state}
+
+
 @app.post("/reload-model")
 def reload():
     """Reload the ML model from disk without retraining."""

@@ -92,6 +92,23 @@ class WaterClockSimulator:
         self._flow_rate: float = 0.0
         self._turbulence: float = 0.0
 
+    def reset(self, seed: int = None):
+        """Reset the simulator back to initial conditions."""
+        if seed is not None:
+            self.rng = np.random.default_rng(seed)
+        else:
+            self.rng = np.random.default_rng(42)
+        self.h_upper = UPPER_HEIGHT_INIT
+        self.h_basin = 0.0
+        self.nozzle_radius = NOZZLE_RADIUS_INIT
+        self.cumulative_erosion = 0.0
+        self.cumulative_sediment = 0.0
+        self.tick = 0
+        self.elapsed = 0.0
+        self.temperature = TEMP_INIT
+        self._flow_rate = 0.0
+        self._turbulence = 0.0
+
     # ---- runtime parameter tuning --------------------------------------
 
     def set_params(self, **kwargs):
