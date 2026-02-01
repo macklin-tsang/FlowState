@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from db.storage import get_latest_state, save_tick, save_ml_result
 from simulator.physics import WaterClockSimulator
-from ml.predictor import predict_corrected_time
+from ml.predictor import predict_corrected_time, reload_model
 
 app = FastAPI(title="FlowState API", version="0.1.0")
 
@@ -59,6 +59,31 @@ def advance(dt: float = Query(default=1.0, gt=0, le=60)):
     save_ml_result(tick_id, **ml)
 
     return {**new_state, "tick_id": tick_id, "corrected_time": ml["corrected_time"]}
+
+@app.post("/train")
+def train(n_ticks: int = Query(default=500, ge=10, le=10000)):
+    """
+    Generate training data, train the ML model, and reload it into
+    the running server.  After this, /state and /advance will return
+    ML-corrected times.
+    """
+    from ml.train import generate_training_data, load_training_data, train_model, save_model
+
+    generate_training_data(n_ticks=n_ticks)
+    X, y = load_training_data()
+    pipe = train_model(X, y)
+    save_model(pipe)
+    reload_model()
+
+    return {"status": "trained", "n_ticks": n_ticks}
+
+
+@app.post("/reload-model")
+def reload():
+    """Reload the ML model from disk without retraining."""
+    reload_model()
+    return {"status": "reloaded"}
+
 
 @app.get("/health")
 def health():
