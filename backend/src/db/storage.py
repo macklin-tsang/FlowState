@@ -3,7 +3,7 @@ Wrapper for SQLAlchemy as a persistent helper which aids in saving, loading and
 session management.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from .connection import get_session
 from .models import SimState, MLHistory
 
@@ -34,6 +34,7 @@ def save_tick(state: Dict[str, float]) -> int:
             sediment=state["sediment"],
             raw_time=state["raw_time"],
             elapsed_time=state.get("elapsed_time", 0),
+            temperature=state.get("temperature", 20.0),
         )
 
         session.add(row)
@@ -103,6 +104,7 @@ def get_latest_state() -> Optional[Dict[str, Any]]:
             "sediment": row.sediment,
             "raw_time": row.raw_time,
             "elapsed_time": row.elapsed_time,
+            "temperature": row.temperature,
         }
 
     finally:
@@ -124,6 +126,7 @@ def get_all_states():
                 "sediment": r.sediment,
                 "raw_time": r.raw_time,
                 "elapsed_time": r.elapsed_time,
+                "temperature": r.temperature,
             }
             for r in rows
         ]
@@ -157,5 +160,74 @@ def get_latest_ml() -> Optional[Dict[str, Any]]:
             "error": row.error,
         }
 
+    finally:
+        session.close()
+
+
+def get_history(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+    """Return paginated sim_state rows (newest first) for playback."""
+    session = get_session()
+    try:
+        rows = (
+            session.query(SimState)
+            .order_by(SimState.tick_id.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "tick_id": r.tick_id,
+                "timestamp": r.timestamp.isoformat(),
+                "water_height": r.water_height,
+                "flow_rate": r.flow_rate,
+                "turbulence": r.turbulence,
+                "erosion": r.erosion,
+                "sediment": r.sediment,
+                "raw_time": r.raw_time,
+                "elapsed_time": r.elapsed_time,
+                "temperature": r.temperature,
+            }
+            for r in reversed(rows)  # return in chronological order
+        ]
+    finally:
+        session.close()
+
+
+def get_drift_log(limit: int = 200) -> List[Dict[str, Any]]:
+    """
+    Return recent ticks with their ML corrections joined together,
+    useful for visualising how drift evolves over time.
+    """
+    session = get_session()
+    try:
+        rows = (
+            session.query(SimState, MLHistory)
+            .join(MLHistory, SimState.tick_id == MLHistory.tick_id)
+            .order_by(SimState.tick_id.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "tick_id": s.tick_id,
+                "elapsed_time": s.elapsed_time,
+                "raw_time": s.raw_time,
+                "corrected_time": m.corrected_time,
+                "drift": s.raw_time - s.elapsed_time,
+                "correction_error": m.corrected_time - s.elapsed_time,
+                "temperature": s.temperature,
+            }
+            for s, m in reversed(rows)
+        ]
+    finally:
+        session.close()
+
+
+def count_ticks() -> int:
+    """Return total number of sim_state rows."""
+    session = get_session()
+    try:
+        return session.query(SimState).count()
     finally:
         session.close()
