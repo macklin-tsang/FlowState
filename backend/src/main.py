@@ -47,10 +47,25 @@ def run_server():
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
 
 
+def run_train(n_generate: int = 500):
+    """Generate training data, then train and save the ML model."""
+    from ml.train import generate_training_data, load_training_data, train_model, save_model
+
+    if n_generate > 0:
+        generate_training_data(n_ticks=n_generate)
+
+    X, y = load_training_data()
+    pipe = train_model(X, y)
+    save_model(pipe)
+
+
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "serve"
 
     if mode == "demo":
         run_demo()
+    elif mode == "train":
+        n = int(sys.argv[2]) if len(sys.argv) > 2 else 500
+        run_train(n_generate=n)
     else:
         run_server()
