@@ -24,6 +24,7 @@ class SimState(Base):
     sediment = Column(Float, nullable=False)
     raw_time = Column(Float, nullable=False)
     elapsed_time = Column(Float, nullable=False, default=0)
+    temperature = Column(Float, nullable=False, default=20.0)
 
 
 class MLHistory(Base):
