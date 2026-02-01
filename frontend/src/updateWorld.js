@@ -28,6 +28,6 @@ export function updateWorld({ state, water, vessel, time }) {
 
     pos.needsUpdate = true
     water.geometry.computeVertexNormals()
-    water.geometry.computeBoundingSphere() // 👈 THIS LINE
+    water.geometry.computeBoundingSphere() // 
 
 }
