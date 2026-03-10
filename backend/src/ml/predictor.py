@@ -68,5 +68,5 @@ def predict_corrected_time(sim_state: Dict[str, Any]) -> Dict[str, Any]:
         "raw_time": raw,
         "corrected_time": corrected,
         "system_time": system,
-        "error": corrected - system,
+        "error": corrected - sim_state.get("elapsed_time", raw),
     }

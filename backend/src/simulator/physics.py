@@ -194,17 +194,13 @@ class WaterClockSimulator:
     def state(self) -> dict:
         """Return the current physics state as a plain dict."""
         return {
-            "water_height": round(self.h_basin, 8),
-            "flow_rate": round(self._flow_rate, 10),
-            "turbulence": round(self._turbulence, 6),
-            "erosion": round(self.cumulative_erosion, 12),
-            "sediment": round(self.cumulative_sediment, 12),
-            "raw_time": round(self.h_basin * TIME_PER_UNIT_HEIGHT, 4),
-            "elapsed_time": round(self.elapsed, 4),
-            "temperature": round(self.temperature, 3),
+            "water_height": float(round(self.h_basin, 8)),
+            "flow_rate": float(round(self._flow_rate, 10)),
+            "turbulence": float(round(self._turbulence, 6)),
+            "erosion": float(round(self.cumulative_erosion, 12)),
+            "sediment": float(round(self.cumulative_sediment, 12)),
+            "raw_time": float(round(self.h_basin * TIME_PER_UNIT_HEIGHT, 4)),
+            "elapsed_time": float(round(self.elapsed, 4)),
+            "temperature": float(round(self.temperature, 3)),
         }
 
-    @property
-    def is_empty(self) -> bool:
-        """True when the upper vessel has fully drained."""
-        return self.h_upper <= 0.0

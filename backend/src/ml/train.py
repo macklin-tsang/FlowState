@@ -15,7 +15,6 @@ picked up by ml/predictor.py on the next import / server restart.
 """
 
 import argparse
-import os
 import sys
 import numpy as np
 from sklearn.linear_model import Ridge
@@ -25,9 +24,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 import joblib
 
-# Features the model uses to predict elapsed_time.
-FEATURE_COLS = ["raw_time", "water_height", "flow_rate", "turbulence", "erosion", "sediment", "temperature"]
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.joblib")
+from ml.predictor import FEATURE_COLS, MODEL_PATH
 
 
 def generate_training_data(n_ticks: int = 500, dt: float = 1.0):
@@ -49,9 +46,10 @@ def load_training_data():
 
     rows = get_all_states()
     if len(rows) < 10:
-        print(f"Only {len(rows)} rows in DB — need at least 10 to train.")
-        print("Run with --generate 500 to create training data first.")
-        sys.exit(1)
+        raise ValueError(
+            f"Only {len(rows)} rows in DB — need at least 10 to train. "
+            "Run with --generate 500 to create training data first."
+        )
 
     X = np.array([[r[c] for c in FEATURE_COLS] for r in rows])
     y = np.array([r["elapsed_time"] for r in rows])
@@ -110,7 +108,11 @@ def main():
     if args.generate > 0:
         generate_training_data(n_ticks=args.generate)
 
-    X, y = load_training_data()
+    try:
+        X, y = load_training_data()
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
     pipe = train_model(X, y)
     save_model(pipe)
     print("\nThe predictor will use this model on the next server restart.")

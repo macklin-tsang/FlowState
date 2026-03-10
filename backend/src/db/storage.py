@@ -134,35 +134,6 @@ def get_all_states():
         session.close()
 
 
-def get_latest_ml() -> Optional[Dict[str, Any]]:
-    """
-    Return the most recent ml_history row as a plain dict, or None.
-    """
-
-    session = get_session()
-
-    try:
-        row = (
-            session.query(MLHistory)
-            .order_by(MLHistory.tick_id.desc())
-            .first()
-        )
-
-        if row is None:
-            return None
-
-        return {
-            "tick_id": row.tick_id,
-            "timestamp": row.timestamp.isoformat(),
-            "raw_time": row.raw_time,
-            "corrected_time": row.corrected_time,
-            "system_time": row.system_time,
-            "error": row.error,
-        }
-
-    finally:
-        session.close()
-
 
 def get_history(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """Return paginated sim_state rows (newest first) for playback."""
@@ -229,5 +200,16 @@ def count_ticks() -> int:
     session = get_session()
     try:
         return session.query(SimState).count()
+    finally:
+        session.close()
+
+
+def clear_all_data() -> None:
+    """Delete all rows from ml_history and sim_state (in FK order)."""
+    session = get_session()
+    try:
+        session.query(MLHistory).delete()
+        session.query(SimState).delete()
+        session.commit()
     finally:
         session.close()

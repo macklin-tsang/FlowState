@@ -9,6 +9,7 @@ export default function useFlowState() {
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState(null)
   const intervalRef = useRef(null)
+  const pollCountRef = useRef(0)
 
   const fetchState = useCallback(async () => {
     try {
@@ -30,7 +31,9 @@ export default function useFlowState() {
       if (!res.ok) return
       const data = await res.json()
       setDrift(data.drift || [])
-    } catch {}
+    } catch (e) {
+      console.warn("[drift] fetch failed:", e.message)
+    }
   }, [])
 
   const fetchStats = useCallback(async () => {
@@ -39,7 +42,9 @@ export default function useFlowState() {
       if (!res.ok) return
       const data = await res.json()
       setStats(data)
-    } catch {}
+    } catch (e) {
+      console.warn("[stats] fetch failed:", e.message)
+    }
   }, [])
 
   const trainModel = useCallback(async (nTicks = 500) => {
@@ -57,13 +62,17 @@ export default function useFlowState() {
     try {
       const res = await fetch(`${API}/reset`, { method: "POST" })
       if (!res.ok) throw new Error(`${res.status}`)
+      const data = await res.json()
       setDrift([])
-      return await res.json()
+      // Immediately refresh all state so the UI doesn't show stale data
+      await fetchState()
+      fetchStats()
+      return data
     } catch (e) {
       setError(e.message)
       return null
     }
-  }, [])
+  }, [fetchState, fetchStats])
 
   useEffect(() => {
     fetchState()
@@ -71,8 +80,10 @@ export default function useFlowState() {
     fetchStats()
     intervalRef.current = setInterval(() => {
       fetchState()
-      fetchDrift()
-      fetchStats()
+      pollCountRef.current += 1
+      // drift updates every 3s, stats every 5s — they change less frequently
+      if (pollCountRef.current % 3 === 0) fetchDrift()
+      if (pollCountRef.current % 5 === 0) fetchStats()
     }, 1000)
     return () => clearInterval(intervalRef.current)
   }, [fetchState, fetchDrift, fetchStats])

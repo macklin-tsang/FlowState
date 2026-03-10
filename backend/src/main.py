@@ -8,7 +8,6 @@ Modes:
 """
 
 import sys
-import os
 
 # ---------- ANSI formatting helpers (no external deps) ----------------------
 

@@ -5,6 +5,7 @@ Endpoints
 ---------
 GET  /state                → latest simulator state + ML correction
 POST /advance?dt=1.0       → manually advance simulation by dt seconds
+POST /reset                → reset simulator to initial conditions
 POST /train?n_ticks=500    → generate data, train ML model, hot-reload
 POST /reload-model         → reload ML model from disk
 GET  /health               → liveness check
@@ -20,6 +21,7 @@ ticks.
 """
 
 import asyncio
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query
@@ -27,7 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from db.storage import (
     get_latest_state, save_tick, save_ml_result,
-    get_history, get_drift_log, count_ticks,
+    get_history, get_drift_log, count_ticks, clear_all_data,
 )
 from simulator.physics import WaterClockSimulator
 from ml.predictor import predict_corrected_time, reload_model
@@ -41,6 +43,7 @@ RETRAIN_INTERVAL = 200    # retrain ML model every N ticks
 # ----- shared state ---------------------------------------------------------
 
 sim = WaterClockSimulator()
+_sim_lock = threading.Lock()
 _loop_running = False
 _ticks_since_retrain = 0
 
@@ -56,20 +59,24 @@ async def simulation_loop():
     _loop_running = True
 
     while _loop_running:
-        # Step the simulation
-        state = sim.step(TICK_DT)
-        tick_id = save_tick(state)
+        try:
+            # Step the simulation
+            with _sim_lock:
+                state = sim.step(TICK_DT)
+            tick_id = save_tick(state)
 
-        # ML prediction
-        ml = predict_corrected_time(state)
-        save_ml_result(tick_id, **ml)
+            # ML prediction
+            ml = predict_corrected_time(state)
+            save_ml_result(tick_id, **ml)
 
-        _ticks_since_retrain += 1
+            _ticks_since_retrain += 1
 
-        # Phase 6: online retraining
-        if _ticks_since_retrain >= RETRAIN_INTERVAL:
-            await _retrain_model()
-            _ticks_since_retrain = 0
+            # Phase 6: online retraining
+            if _ticks_since_retrain >= RETRAIN_INTERVAL:
+                await _retrain_model()
+                _ticks_since_retrain = 0
+        except Exception as e:
+            print(f"[simulation_loop] tick error (skipped): {e}")
 
         await asyncio.sleep(TICK_INTERVAL)
 
@@ -115,7 +122,7 @@ app = FastAPI(title="FlowState API", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # TODO: restrict to frontend origin in production
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -142,7 +149,8 @@ def state():
 @app.post("/advance")
 def advance(dt: float = Query(default=1.0, gt=0, le=60)):
     """Manually advance the simulation by dt seconds (on top of the loop)."""
-    new_state = sim.step(dt)
+    with _sim_lock:
+        new_state = sim.step(dt)
     tick_id = save_tick(new_state)
 
     ml = predict_corrected_time(new_state)
@@ -169,9 +177,12 @@ def train(n_ticks: int = Query(default=500, ge=10, le=10000)):
 def reset_sim():
     """Reset the simulator to initial conditions so the demo can be re-run."""
     global _ticks_since_retrain
-    sim.reset()
-    _ticks_since_retrain = 0
-    return {"status": "reset", "state": sim.state}
+    with _sim_lock:
+        sim.reset()
+        _ticks_since_retrain = 0
+        state_snapshot = sim.state
+    clear_all_data()
+    return {"status": "reset", "state": state_snapshot}
 
 
 @app.post("/reload-model")

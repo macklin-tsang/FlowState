@@ -6,10 +6,12 @@ PostgreSQL 'flowstate db where every other module imports 'get_session' from her
 that communicates to the DB.
 """
 
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "postgresql://macklin@localhost/flowstate"
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://macklin@localhost/flowstate")
 
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine)

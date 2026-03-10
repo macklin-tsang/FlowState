@@ -11,10 +11,13 @@ function Scene({ draining, apiState }) {
   const [localWaterHeight, setLocalWaterHeight] = useState(0.85)
   const [localBucketLevel, setLocalBucketLevel] = useState(0)
   const drainingRef = useRef(draining)
+  const apiStateRef = useRef(apiState)
   drainingRef.current = draining
+  apiStateRef.current = apiState
 
   useFrame((_, delta) => {
-    if (!drainingRef.current) return
+    // skip local animation when backend is driving the scene
+    if (!drainingRef.current || apiStateRef.current) return
     setLocalWaterHeight((h) => Math.max(h - delta * 0.06, 0))
     setLocalBucketLevel((b) => Math.min(b + delta * 0.04, 1))
   })
@@ -116,13 +119,17 @@ function MetricsPanel({ state, drift, stats, connected }) {
           <MetricRow label="True Elapsed" value={`${state.elapsed_time?.toFixed(2)}s`} color="#4af" />
           <MetricRow
             label="Drift"
-            value={`${(state.raw_time - state.elapsed_time)?.toFixed(3)}s`}
-            color={Math.abs(state.raw_time - state.elapsed_time) < 1 ? "#4f4" : "#fa4"}
+            value={state.raw_time != null && state.elapsed_time != null
+              ? `${(state.raw_time - state.elapsed_time).toFixed(3)}s`
+              : "---"}
+            color={Math.abs((state.raw_time ?? 0) - (state.elapsed_time ?? 0)) < 1 ? "#4f4" : "#fa4"}
           />
           <MetricRow
             label="ML Error"
-            value={`${(state.corrected_time - state.elapsed_time)?.toFixed(4)}s`}
-            color={Math.abs(state.corrected_time - state.elapsed_time) < 0.5 ? "#4f4" : "#f44"}
+            value={state.corrected_time != null && state.elapsed_time != null
+              ? `${(state.corrected_time - state.elapsed_time).toFixed(4)}s`
+              : "---"}
+            color={Math.abs((state.corrected_time ?? 0) - (state.elapsed_time ?? 0)) < 0.5 ? "#4f4" : "#f44"}
           />
           <MetricRow label="Temperature" value={`${state.temperature?.toFixed(2)} C`} color="#88f" />
           <MetricRow label="Flow Rate" value={state.flow_rate?.toExponential(3)} color="#4af" />

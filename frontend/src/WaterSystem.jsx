@@ -1,18 +1,18 @@
-import React, { useRef, useMemo } from "react"
+import { useRef, useMemo, useEffect } from "react"
 import * as THREE from "three"
 import { useFrame } from "@react-three/fiber"
+
+// Radius of funnel at a given normalized height (0=bottom, 1=top of cone)
+// Cone profile: radius 1.8 at top (h=1) down to 0.3 at bottom (h=0)
+function funnelRadiusAt(h) {
+  return 0.3 + h * 1.5
+}
 
 // ---- Volumetric water body inside the funnel (conforms to cone shape) ----
 function FunnelWater({ waterHeight, draining }) {
   const meshRef = useRef()
   const originalPositions = useRef(null)
   const topY = useRef(0)
-
-  // Radius of funnel at a given normalized height (0=bottom, 1=top of cone)
-  // Cone profile: radius 1.8 at top (h=1) down to 0.3 at bottom (h=0)
-  function funnelRadiusAt(h) {
-    return 0.3 + h * 1.5
-  }
 
   // Build a truncated-cone water body via LatheGeometry that fills
   // from the nozzle bottom up to the current waterHeight.
@@ -42,6 +42,12 @@ function FunnelWater({ waterHeight, draining }) {
     geo.computeVertexNormals()
     return geo
   }, [waterHeight])
+
+  // Reset cached positions whenever the geometry is rebuilt so wave
+  // animation baselines don't go stale.
+  useEffect(() => {
+    originalPositions.current = null
+  }, [waterGeometry])
 
   // Animate wave ripples on the top surface vertices of the LatheGeometry
   useFrame((state) => {
